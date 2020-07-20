@@ -1,0 +1,44 @@
+package com.strumenta.funnellang
+
+import com.strumenta.funnel.Subscriber;
+import com.strumenta.funnel.EmailScheduling;
+import java.time.DayOfWeek;
+
+rule "Send book offer only after at least 3 book presentation emails"
+   when
+      subscriber : Subscriber (
+          emailReceivedWithTag("book_explanation") < 3
+      )
+      scheduling : EmailScheduling(
+        !blocked,
+        sending.subscriber == subscriber,
+        sending.email.tags contains "book_offer"
+      )
+   then
+        scheduling.setBlocked(true);
+end
+
+rule "Block book offers on monday"
+   when
+      scheduling : EmailScheduling(
+        !blocked,
+        sending.date.dayOfWeek == DayOfWeek.MONDAY,
+        sending.email.tags contains "book_offer"
+      )
+   then
+        scheduling.setBlocked(true);
+end
+
+rule "Block book offers for people who bought"
+   when
+      subscriber : Subscriber (
+          tags contains "book_bought"
+      )
+      scheduling : EmailScheduling(
+        !blocked,
+        sending.subscriber == subscriber,
+        sending.email.tags contains "book_offer"
+      )
+   then
+        scheduling.setBlocked(true);
+end
